@@ -1,0 +1,40 @@
+From: CY <cy@gx10a.local>
+Subject: [PATCH] platform match: accept ASUS GX10 (and Lenovo PGX)
+
+Adds DMI branches for boards the stock match rejects. ASUS GX10 reports
+vendor "ASUSTeK COMPUTER INC." and product/board "GX10".
+
+The Lenovo ThinkStation PGX branch (LENOVO / 30KL0005GF) is inherited from
+Spark_Energy_Management's copy of this driver (CC BY-NC 4.0); it is not
+required on ASUS hardware and may be dropped if only the ASUS branch is wanted.
+
+Base: christopherowen/dgx-spark-fan-control @ deb2ea1
+---
+--- a/kernel/dgx_ec_fan_control.c	2026-10-02 11:40:46.487007867 +0800
++++ b/kernel/dgx_ec_fan_control.c	2026-10-02 11:40:46.487726203 +0800
+@@ -187,9 +187,22 @@
+ 
+ static bool dgx_ec_is_supported_platform(void)
+ {
+-	return dmi_match(DMI_SYS_VENDOR, "NVIDIA") &&
+-	       dmi_match(DMI_PRODUCT_NAME, "NVIDIA_DGX_Spark") &&
+-	       dmi_match(DMI_BOARD_NAME, "P4242");
++	bool nvidia_spark;
++	bool lenovo_pgx;
++	bool asus_gx10;
++
++	nvidia_spark = dmi_match(DMI_SYS_VENDOR, "NVIDIA") &&
++		       dmi_match(DMI_PRODUCT_NAME, "NVIDIA_DGX_Spark") &&
++		       dmi_match(DMI_BOARD_NAME, "P4242");
++	/* Lenovo reports the board name as INVALID on the qualified 30KL SKU. */
++	lenovo_pgx = dmi_match(DMI_SYS_VENDOR, "LENOVO") &&
++		     dmi_match(DMI_PRODUCT_NAME, "30KL0005GF");
++	/* ASUS GX10 (GB10): vendor "ASUSTeK COMPUTER INC.", product/board "GX10".
++	 * The board name is not required: GX10 reports it equal to the product. */
++	asus_gx10 = dmi_match(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC.") &&
++		    dmi_match(DMI_PRODUCT_NAME, "GX10");
++
++	return nvidia_spark || lenovo_pgx || asus_gx10;
+ }
+ 
+ static int dgx_ec_validate_transport(struct ffa_device *ffa_dev,

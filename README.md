@@ -27,28 +27,49 @@ always add more cooling.
 | `spark-fan-governor.service` | systemd unit — boot-enabled, `Restart=on-failure` |
 | `install-module.sh` | installs + boot-persists the EC fan-floor driver |
 | `apply_asus_patch.py` | restores the ASUS GX10 DMI branch in the driver source |
-| `driver-patch/dgx_ec_fan_control.c.patched` | the reconstructed patched driver source |
+| `driver-patch/0001-platform-match-asus-gx10.patch` | DMI patch against the pristine upstream driver |
+| `driver-patch/LICENSE-GPL-2.0-upstream-driver` | the upstream driver's licence (GPL-2.0-only) |
+
+## Licence
+
+This repository's own code (`fan_governor.py`, the systemd unit, scripts) is
+**Apache-2.0**, matching the licence GitHub attached to this repository.
+
+The driver dependency is **not** covered by it: `dgx_ec_fan_control` is
+GPL-2.0-only and is **not redistributed here**. Only a patch against the
+pristine upstream source is shipped, and you obtain the source yourself:
+
+- **Upstream:** <https://github.com/christopherowen/dgx-spark-fan-control>
+- **Base commit:** `deb2ea1` (8 September 2026)
 
 ## The driver dependency
 
 The governor drives a cooling device provided by the kernel module
-`dgx_ec_fan_control` (upstream: `djmad/Spark_Energy_Management`, GPL-2.0,
-v0.1.3). Its stock DMI gate accepts only NVIDIA `P4242` and Lenovo
-`30KL0005GF`. Our ASUS GX10 reports vendor `ASUSTeK COMPUTER INC.` and product
-`GX10`, so a third branch is required.
+`dgx_ec_fan_control` (upstream `christopherowen/dgx-spark-fan-control`,
+GPL-2.0-only, v0.1.3). Its stock DMI gate accepts only NVIDIA `P4242`; our ASUS
+GX10 reports vendor `ASUSTeK COMPUTER INC.` and product/board `GX10`, so an
+additional branch is required.
 
-The originally patched source was **not preserved** — only the compiled module
-carried the change (verified: the `.ko` contained `ASUSTeK COMPUTER INC.`,
-`GX10` and the `asus_gx10` local, while every `.c` on disk lacked them). The
-branch was recovered from those rodata strings and is reapplied by
-`apply_asus_patch.py`. The rebuilt module was verified to probe on both nodes:
-packet service `0x8003`, properties `0x109`, FF-A 1.2, capabilities
-fan0 1260–9000 / fan1 1890–13500 RPM, floor device registered in automatic
-state.
+`driver-patch/0001-platform-match-asus-gx10.patch` adds it and is verified to
+apply cleanly with `patch -p1` against the upstream base commit. It also carries
+a Lenovo ThinkStation PGX branch (`LENOVO` / `30KL0005GF`) inherited from the
+`Spark_Energy_Management` copy of this driver (CC BY-NC 4.0); that branch is not
+needed on ASUS hardware and can be dropped if you only want the ASUS change.
+
+Historical note: on the machine this was developed on, the originally patched
+source had **not been preserved** — only the compiled module carried the change
+(its rodata held `ASUSTeK COMPUTER INC.`, `GX10` and an `asus_gx10` local while
+every `.c` on disk lacked them). The branch above was recovered from those
+strings, and the rebuilt module verified to probe on real hardware: packet
+service `0x8003`, properties `0x109`, FF-A 1.2, capabilities fan0 1260–9000 /
+fan1 1890–13500 RPM, floor device registered in automatic state.
 
 `srcversion` is **not** a useful integrity check here — it hashes struct
-layout, so it is byte-identical between the patched and unpatched builds.
-Probe success on GX10 is the real evidence.
+layout, so it is byte-identical between the patched and unpatched builds. Probe
+success on real GX10 hardware is the real evidence.
+
+`apply_asus_patch.py` reproduces the same change in-place if you already have a
+driver checkout; the patch file is the canonical form.
 
 ## Floor ladder (driver constants)
 
@@ -95,8 +116,21 @@ python3 fan_governor.py --dry-run            # no writes, no root needed
 
 ## Install on a fresh node
 
+The driver is **not** bundled — get the source, patch it, build it, then
+install. The patch in `driver-patch/` is verified to apply cleanly against the
+upstream base commit.
+
 ```sh
-sudo bash install-module.sh                  # driver -> /lib/modules, boot-persist
+# 1. driver: clone upstream, apply the ASUS GX10 patch, build
+git clone https://github.com/christopherowen/dgx-spark-fan-control
+cd dgx-spark-fan-control && git checkout deb2ea1
+patch -p1 < /path/to/spark-fan-governor/driver-patch/0001-platform-match-asus-gx10.patch
+cd kernel && make && cd ..
+
+# 2. install the module + make it load at boot
+sudo DRIVER_KERNEL_DIR=$PWD/kernel bash install-module.sh
+
+# 3. the governor itself
 sudo install -d -m 0755 /opt/spark-fan-governor
 sudo install -m 0644 fan_governor.py README.md /opt/spark-fan-governor/
 sudo install -m 0644 spark-fan-governor.service /etc/systemd/system/
