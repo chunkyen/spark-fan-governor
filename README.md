@@ -1,6 +1,14 @@
 # Spark Fan Governor (D1)
 
-Predictive additive fan-floor governor for ASUS GX10 / NVIDIA GB10 nodes.
+Predictive additive fan-floor governor for **ASUS GX10** (Ascent GX10) nodes — the ASUS
+partner SKU of NVIDIA GB10 / DGX Spark.
+
+> **Tested on ASUS GX10.** The upstream `dgx-spark-fan-control` driver stock-gates its DMI
+> match to NVIDIA `P4242` (DGX Spark) and Lenovo `30KL0005GF` (ThinkStation PGX). On an ASUS
+> GX10 it does **not** load without the included `apply_asus_patch.py` /
+> `driver-patch/0001-platform-match-asus-gx10.patch`. This repo is validated end-to-end on
+> two ASUS GX10 nodes; if you are on an NVIDIA DGX Spark or Lenovo PGX you do not need the
+> patch, but the governor itself has only ever been exercised on ASUS hardware.
 
 **Repository:** public at <https://github.com/chunkyen/spark-fan-governor>
 (Apache-2.0). The driver dependency is GPL-2.0-only and is **not**
