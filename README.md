@@ -2,7 +2,9 @@
 
 Predictive additive fan-floor governor for ASUS GX10 / NVIDIA GB10 nodes.
 
-**Local-only repository: no remote is configured and nothing is ever pushed.**
+**Repository:** public at <https://github.com/chunkyen/spark-fan-governor>
+(Apache-2.0). The driver dependency is GPL-2.0-only and is **not**
+redistributed here — see Licence below.
 
 Built 2026-10-02 as a standalone alternative to `Spark_Energy_Management`'s
 `energy_control` service, whose fixed safety contract is unusable on a live
@@ -74,8 +76,11 @@ driver checkout; the patch file is the canonical form.
 ## Floor ladder (driver constants)
 
 State 0 = auto/off, then 2700, 3600, 4500, 5400, 6300, 7200, 8100, 9000,
-10125, 11250, 12375, 13500 RPM. fan0 tops out at 9000 RPM, so **state 8 is the
-practical ceiling**; states 9–12 can only be satisfied by fan1.
+10125, 11250, 12375, 13500 RPM. fan0 tops out at 9000 RPM (hardware limit);
+states 9–12 push fan1 beyond that while fan0 saturates. The governor caps
+requests at `--max-state 10` (fan1 = 11250 RPM): verified live on a GX10 —
+the EC accepted `cur_state=10`, fan0 held 9000, fan1 ramped 10260 → 11205 RPM
+within ~8 s. States 11–12 remain untested.
 
 ## Behaviour
 
@@ -86,6 +91,14 @@ practical ceiling**; states 9–12 can only be satisfied by fan1.
 - Load held → floor held. Load gone → held for `--idle-delay-s`, then released
   to 0 (EC auto).
 - GPU ≥ `--hot-gpu-c` or any ACPI zone ≥ `--hot-acpi-c` → `--hot-state`.
+  Since 2026-10-02 (afternoon): `--hot-state 10 --max-state 10` — escalation
+  drives fan1 to the 11250 RPM rung (fan0 saturates at its 9000 limit). This
+  followed measured CPU-zone overshoot on gx10b: both 90 °C+ acpitz excursions
+  peaked (92–94.6 °C) with fans already at the state-8 rung, i.e. fan1 had
+  ~2 300 RPM of unused headroom above the old cap. Rationale and trade-off:
+  the overshoot is seconds-scale thermal-mass lag, so state 10 pre-arms more
+  airflow during the climb but does not eliminate the spike; it also trades
+  acoustic headroom — states 11–12 stay reserved.
 - `stop` always writes floor 0, so the EC regains full control.
 
 ## Measured 2026-10-02 (A governed vs B EC-auto, identical 84 s load, ~57 W)

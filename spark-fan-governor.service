@@ -13,7 +13,7 @@ Environment=PYTHONDONTWRITEBYTECODE=1
 # The EC fan-floor driver is installed to /lib/modules/$(uname -r)/extra and
 # listed in /etc/modules-load.d, so it is normally loaded before this unit.
 ExecStartPre=/sbin/modprobe dgx_ec_fan_control
-ExecStart=/usr/bin/python3 -B /opt/spark-fan-governor/fan_governor.py --sample-s 2 --idle-delay-s 120 --load-state 5 --hot-gpu-c 80 --hot-state 8 --log-file /var/log/spark-fan-governor.jsonl
+ExecStart=/usr/bin/python3 -B /opt/spark-fan-governor/fan_governor.py --sample-s 2 --idle-delay-s 120 --load-state 5 --hot-gpu-c 80 --hot-state 10 --max-state 10 --log-file /var/log/spark-fan-governor.jsonl
 Restart=on-failure
 RestartSec=10
 TimeoutStopSec=15
