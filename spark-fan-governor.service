@@ -1,0 +1,25 @@
+[Unit]
+Description=GB10 predictive fan-floor governor (D1) — additive fan floor only
+Documentation=file:/opt/spark-fan-governor/README.md
+After=local-fs.target systemd-modules-load.service
+Wants=systemd-modules-load.service
+# Single-writer rule: never alongside the upstream energy_control service.
+Conflicts=energy_control.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/spark-fan-governor
+Environment=PYTHONDONTWRITEBYTECODE=1
+# The EC fan-floor driver is installed to /lib/modules/$(uname -r)/extra and
+# listed in /etc/modules-load.d, so it is normally loaded before this unit.
+ExecStartPre=/sbin/modprobe dgx_ec_fan_control
+ExecStart=/usr/bin/python3 -B /opt/spark-fan-governor/fan_governor.py --sample-s 2 --idle-delay-s 120 --load-state 5 --hot-gpu-c 80 --hot-state 8 --log-file /var/log/spark-fan-governor.jsonl
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+KillMode=mixed
+Nice=-5
+StateDirectory=spark-fan-governor
+
+[Install]
+WantedBy=multi-user.target
