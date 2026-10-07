@@ -171,6 +171,11 @@ def main(argv=None) -> int:
     p.add_argument("--load-state", type=int, default=5, help="floor while loaded (5 = 6300 RPM)")
     p.add_argument("--idle-delay-s", type=float, default=120.0,
                    help="hold the load floor this long after load ends")
+    # Two independent hot trips, spaced by the measured acpitz-leads-die gap
+    # (zones run 7-17 C hotter than the GPU die and are what the EC acts on):
+    # die >= 80 C catches fast silicon spikes; hottest ACPI zone >= 88 C is an
+    # early warning that the package is approaching the EC ~98 C cutoff. See
+    # README "Thermal sensor semantics".
     p.add_argument("--hot-gpu-c", type=float, default=80.0)
     p.add_argument("--hot-acpi-c", type=float, default=88.0)
     p.add_argument("--hot-state", type=int, default=8, help="floor when hot (8 = 9000 RPM, cap)")

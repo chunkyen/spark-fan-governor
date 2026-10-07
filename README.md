@@ -109,6 +109,43 @@ within ~8 s. States 11–12 remain untested.
   acoustic headroom — states 11–12 stay reserved.
 - `stop` always writes floor 0, so the EC regains full control.
 
+## Thermal sensor semantics (why the two hot trips are different sensors)
+
+The GB10 has **no CPU package sensor**. The seven `thermal_zone*` entries are
+all generic `acpitz` — firmware-defined board regions (SoC vicinity, VRM/power
+areas) — and the hottest of them is what the EC watches. `nvidia-smi` reports
+the only die-level silicon reading on the machine: the Blackwell GPU die.
+Nothing in Linux measures the CPU complex die directly.
+
+Consequences that shape the governor:
+
+- **The ACPI zones read hotter than the GPU die and lead it** — measured at
+  7–17 °C on this hardware (community data agrees: die ~61 °C while a zone read
+  82.9 °C on our own node). The zones sit on the package heat path the EC
+  protects (~98 °C cutoff), so a zone trip is an *early warning of the thing
+  the EC will act on*, not a false alarm.
+- **The two hot trips are therefore deliberately offset**: `--hot-gpu-c 80`
+  (die, the true silicon figure) and `--hot-acpi-c 88` (package, the EC signal,
+  raised by roughly the observed die/zone gap so both trips mean the same
+  actual risk). Either alone would miss something: the die is blind to
+  VRM/heat-soak the zones catch; the zones lag a fast die spike the die sensor
+  catches instantly.
+- **A zone trip during pure GPU load is correct, not a false positive.** The
+  Grace CPU and Blackwell GPU share one package and heatsink with no thermal
+  isolation — GPU power heats the whole package even at 0 % CPU utilisation.
+  Community threads show the "CPU" (package) zones running 15–20 °C above the
+  die under GPU-only inference, and hard power-offs where `nvidia-smi` looked
+  fine while a zone sat at 92–96 °C.
+- **The old "CPU temperature" label was wrong, not the reading.** The zone
+  number is real board telemetry and worth watching — it is just not CPU-die
+  temperature, and dashboards should say `Temperature (ACPI)` (the Seewhy-dash
+  collector now carries `temperatureLabel` / `temperatureSource` for this).
+
+Rule of thumb: GPU die temp + throttle-reason bits answer "is the compute
+silicon safe"; the hottest ACPI zone answers "is the package heading for the
+EC limit"; fan RPM answers "is the response adequate". The governor uses each
+for exactly its own question.
+
 ## Measured 2026-10-02 (A governed vs B EC-auto, identical 84 s load, ~57 W)
 
 | metric | A (floor 5) | B (EC auto) |
