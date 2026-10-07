@@ -1,5 +1,5 @@
 [Unit]
-Description=GB10 predictive fan-floor governor (D1) — additive fan floor only
+Description=GB10 predictive fan-floor governor — additive fan floor only
 Documentation=file:/opt/spark-fan-governor/README.md
 After=local-fs.target systemd-modules-load.service
 Wants=systemd-modules-load.service

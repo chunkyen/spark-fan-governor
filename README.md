@@ -1,4 +1,4 @@
-# Spark Fan Governor (D1)
+# Spark Fan Governor
 
 Predictive additive fan-floor governor for **ASUS GX10** (Ascent GX10) nodes — the ASUS
 partner SKU of NVIDIA GB10 / DGX Spark.
@@ -31,7 +31,8 @@ always add more cooling.
 
 ### Naming and the decision record
 
-**"D1" = Design 1** of three options drawn up when this was carved out of
+**"D1" = Design 1** — a working label from the carve-out that the public
+name deliberately does not carry — of three options drawn up when this was carved out of
 Spark_Energy_Management (October 2026), after the operator asked for just the
 predictive-fan feature:
 

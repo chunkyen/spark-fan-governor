@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D1 standalone predictive fan-floor governor for GB10 (ASUS GX10).
+"""Standalone predictive fan-floor governor for GB10 (ASUS GX10).
 
 Owns exactly ONE actuator: the additive fan floor exposed by the
 dgx_ec_fan_control kernel module (cooling device "dgx_ec_fan_floor", states
@@ -162,7 +162,7 @@ def read_vllm_running(url: str | None) -> int | None:
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(description="D1 predictive fan-floor governor")
+    p = argparse.ArgumentParser(description="Predictive fan-floor governor")
     p.add_argument("--sample-s", type=float, default=2.0)
     p.add_argument("--load-power-w", type=float, default=30.0,
                    help="GPU power above this counts as load")
