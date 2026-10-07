@@ -29,6 +29,25 @@ D1 keeps the one wanted feature — predictive fan anticipation — and owns
 governors, no cpufreq maxima. The floor is a lower clamp only; firmware may
 always add more cooling.
 
+### Naming and the decision record
+
+**"D1" = Design 1** of three options drawn up when this was carved out of
+Spark_Energy_Management (October 2026), after the operator asked for just the
+predictive-fan feature:
+
+- **D1 — standalone floor daemon** (this project, chosen): a ~100-line
+  stdlib-only daemon owning only the `dgx_ec_fan_floor` device. Fastest to
+  ship, smallest trust surface, nothing else touched.
+- **D2 — faithful predictive port**: SEM's full digital-twin fan policy
+  (load-scaled speed instead of a fixed floor), reusing their read-only
+  collector as a library. More fidelity, but the twin constants are
+  Lenovo-fitted — a prior here, not a calibration. Kept as the upgrade path
+  if the fixed floor ever proves too blunt.
+- **E — full `energy_control` service**: rejected as a dead end — even with
+  "clocks disabled" via config it still arms the GPU entry ceiling, caps CPU
+  targets by validation, and abort-loops on the fixed memory guard. Making it
+  work means patching their fixed safety contract: a fork, not a config.
+
 ## Contents
 
 | path | what |
